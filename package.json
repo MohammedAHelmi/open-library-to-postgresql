@@ -1,0 +1,24 @@
+{
+  "name": "practice",
+  "version": "1.0.0",
+  "main": "work-stream.js",
+  "scripts": {
+    "start": "node index.js",
+    "discover": "node explorings/discover-schemas.js",
+    "migrate": "node-pg-migrate",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "type": "module",
+  "dependencies": {
+    "pg": "^8.13.0"
+  },
+  "devDependencies": {
+    "colors": "^1.4.0",
+    "dotenv": "^16.4.5",
+    "node-pg-migrate": "^7.7.1"
+  }
+}

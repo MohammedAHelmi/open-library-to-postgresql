@@ -1,0 +1,62 @@
+{
+    "type": "object",
+    "properties": {
+        "title": {
+            "type": [
+                "string",
+                "undefined"
+            ]
+        },
+        "description": {
+            "type": [
+                "undefined",
+                "string",
+                "object"
+            ],
+            "properties": {
+                "type": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
+        "authors": {
+            "type": [
+                "array",
+                "undefined"
+            ],
+            "items": {
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "type": [
+                            "object",
+                            "string"
+                        ],
+                        "properties": {
+                            "key": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "author": {
+                        "type": [
+                            "object",
+                            "string"
+                        ],
+                        "properties": {
+                            "key": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "role": {
+                        "type": "string"
+                    }
+                }
+            }
+        }
+    }
+}

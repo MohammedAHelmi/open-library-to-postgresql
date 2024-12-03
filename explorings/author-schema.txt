@@ -1,0 +1,29 @@
+{
+    "type": "object",
+    "properties": {
+        "key": {
+            "type": "string"
+        },
+        "name": {
+            "type": [
+                "string",
+                "undefined"
+            ]
+        },
+        "bio": {
+            "type": [
+                "undefined",
+                "object",
+                "string"
+            ],
+            "properties": {
+                "type": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}
