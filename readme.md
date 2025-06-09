@@ -43,11 +43,6 @@ I have other miscellaneous functions that I use to make materialized views for t
 3. Run `npm run discover` to output the files with schemas of the dump however I already ran it and included the result in `explorings` directory
 4. create an empty database
 5. create a .env file and make sure to provide the following parameters correctly
-    - DB_HOST
-    - DB_PORT
-    - DB_USER
-    - DB_NAME
-    - DB_PASSWORD
     - DATABASE_URL
     - MAX_DB_CONNECTIONS
 6. Open terminal and run `npm install`

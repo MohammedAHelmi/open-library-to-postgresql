@@ -1,45 +1,44 @@
-import pg from 'pg';
 import 'colors';
+import DBQueryAllocator from './utils/db-query-allocator.js';
 import populateAuthorsTable from './authors/populate-authors-table.js';
 import populateBooksTables from './books/populate-books-tables.js';
-import indexAuthorIdInBookAuthors from './books/index-author-id-in-book-authors.js';
-import doAuthorsCleanUps from './authors/author-clean-ups.js';
-import createOrderedMaterializedView from './utils/create-ordered-materialized-view.js';
-import { createCountMaterializedView } from './utils/create-count-materialized-view.js';
-import createGiSTIndex from './utils/create-gist-index.js'
+import indexAuthorIdInAuthorBooks from './books/index-author-id-in-author-books.js';
+import createOrderedMaterializedView from './operations/create-ordered-materialized-view.js';
+import { createCountMaterializedView } from './operations/create-count-materialized-view.js';
+import createGiNIndex from './operations/create-gist-index.js'
+import populateAuthorBooks from './books/build-author-books.js';
+import cleanUp from './operations/clean-up.js';
 import { config } from 'dotenv';
 config();
 
-const pool = new pg.Pool({
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
-    database: process.env.DB_NAME,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    max: +process.env.MAX_DB_CONNECTIONS
-});
-
+const dbQueryAllocator = new DBQueryAllocator(process.env.DATABASE_URL, +process.env.MAX_DB_CONNECTIONS)
 try{
-    await populateAuthorsTable(pool);
-    await populateBooksTables(pool);
-    await doAuthorsCleanUps(pool);
-    await indexAuthorIdInBookAuthors(pool);
-    console.log(`Inserting data is Done...`.green);
+    await Promise.all([
+        populateAuthorsTable(dbQueryAllocator),
+        populateBooksTables(dbQueryAllocator)
+    ])
+    await populateAuthorBooks(dbQueryAllocator);
+    console.log(`Inserting Data Is Done ✅`);
+    
+    await cleanUp(dbQueryAllocator);
+
+    await indexAuthorIdInAuthorBooks(dbQueryAllocator);
+    console.log(`Author Id index is built successfully`.blue);
 
     await Promise.all([
-        createOrderedMaterializedView(pool, 'authors', 'name'), 
-        createOrderedMaterializedView(pool, 'books', 'title'),
-        createGiSTIndex(pool, 'authors', 'name'),
-        createGiSTIndex(pool, 'books', 'title'),
-        createCountMaterializedView(pool, 'authors'),
-        createCountMaterializedView(pool, 'books')
+        createOrderedMaterializedView(dbQueryAllocator, 'authors', 'name'), 
+        createOrderedMaterializedView(dbQueryAllocator, 'books', 'title'),
+        createGiNIndex(dbQueryAllocator, 'authors', 'name'),
+        createGiNIndex(dbQueryAllocator, 'books', 'title'),
+        createCountMaterializedView(dbQueryAllocator, 'authors'),
+        createCountMaterializedView(dbQueryAllocator, 'books')
     ]);
 
-    console.log(`ALL DONE`.blue);
+    console.log(`ALL DONE`.bgGreen);
 }
 catch(err){
     console.log(err);
 }
 finally{
-    await pool.end();
+    await dbQueryAllocator.end();
 }

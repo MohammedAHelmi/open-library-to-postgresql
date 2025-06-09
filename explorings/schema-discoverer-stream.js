@@ -10,8 +10,8 @@ class SchemaDiscoverer extends Transform{
     }
 
     _transform(chunk, enc, cb){
-        const objectSchema = giveSchema(chunk);
-        this.#schema = mergeSchemas(this.#schema, objectSchema);
+        const chunkSchema = giveSchema(chunk);
+        this.#schema = this.#schema !== null? mergeSchemas(this.#schema, chunkSchema): chunkSchema;
         cb();
     }
 

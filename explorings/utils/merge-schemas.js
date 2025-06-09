@@ -1,52 +1,40 @@
-const copyTheNotNull = (obj1, obj2) => {
-    const obj = obj1 ?? obj2;
-    return obj != null? {...obj} : null;
-}
-
-const mergeTypes = (type1, type2) => {
-    const types = new Set();
-
-    for(const type of [type1, type2]){
-        if(typeof type === 'string')
-            types.add(type)
-        
-        if(type instanceof Array)
-            type.forEach(type => types.add(type));
+export default function mergeSchemas(s1, s2){
+    if(s1 == null || s2 == null){
+        const schema = s1 ?? s2;
+        if(!schema.type.includes("undefined"))
+            schema.type.push("undefined");
+        return schema;
     }
-
-    const mergedType = [...types];
-    return mergedType.length === 1? mergedType[0]: mergedType;
-}
-
-const mergeProperties = (properties1, properties2) => {
-    if(properties1 == null || properties2 == null)
-        return copyTheNotNull(properties1, properties2);
-
-    const properties = {};
-    
-    const propertiesNames = new Set([...Object.keys(properties1), ...Object.keys(properties2)]);
-
-    for(const propertyName of propertiesNames)
-        properties[propertyName] = mergeSchemas(properties1[propertyName], properties2[propertyName]);
-
-    return properties;
-}
-
-function mergeSchemas(schema1, schema2){
-    if(schema1 == null || schema2 == null)
-        return copyTheNotNull(schema1, schema2)
 
     const schema = {};
 
-    schema.type = mergeTypes(schema1.type, schema2.type);
+    schema.type = mergeTypes(s1.type, s2.type);
     
-    if(schema.type === 'array' || schema.type.includes('array'))
-        schema.items = mergeSchemas(schema1.items, schema2.items);
-
-    if(schema.type === 'object' || schema.type.includes('object'))
-        schema.properties = mergeProperties(schema1.properties, schema2.properties);
-
+    if(s1.type.includes('array') && s2.type.includes('array'))
+        schema.items = mergeSchemas(s1.items, s2.items);
+    else if(schema.type.includes('array'))
+        schema.items = s1.items ?? s2.items;
+    
+    if(s1.type.includes('object') && s2.type.includes('object'))
+        schema.properties = mergeProperties(s1.properties, s2.properties);
+    else if(schema.type.includes('object'))
+        schema.properties = s1.properties ?? s2.properties;
+    
     return schema;
 }
 
-export default mergeSchemas;
+function mergeTypes(t1, t2) {
+    const type = new Set([...t1, ...t2]);
+    return [...type];
+}
+
+function mergeProperties(p1, p2) {
+    if(p1 == null || p2 == null)
+        return p1 ?? p2;
+
+    const properties = {};
+    const propertiesNames = new Set([...Object.keys(p1), ...Object.keys(p2)]);
+    for(const propertyName of propertiesNames)
+        properties[propertyName] = mergeSchemas(p1[propertyName], p2[propertyName]);
+    return properties;
+}

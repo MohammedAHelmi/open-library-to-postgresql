@@ -1,55 +1,65 @@
 import { Writable } from 'stream';
-import pg from 'pg';
+import InsertBuilder from '../utils/insert-builder.js';
 
 class DBWriter extends Writable{
-    #pool;
-    #MAX_CONCURRENT_QUERIES;
-    #runningQueriesCount;
-    #waitingList;
-    #endStream;
+    #queryAllocator;
+    #tableName;
+    #columns;
+    #batchSize;
 
-    constructor(pool, options){
-        if(typeof options?.MAX_CONCURRENT_QUERIES !== 'number')
-            throw new Error(`Expected MAX_CONCURRENT_QUERIES option to be a number`);
-
-        const { MAX_CONCURRENT_QUERIES, ...restOptions } = options;
+    constructor(allocator, options){
+        const { maxBatchSize, tableName, columns, ...restOptions } = options;
         super({ restOptions, objectMode: true });
 
-        if(!(pool instanceof pg.Pool))
-            throw new Error(`Expected pool to an instance of Pool`);
-        this.#pool = pool;
-
-        this.#MAX_CONCURRENT_QUERIES = MAX_CONCURRENT_QUERIES;
-        this.#runningQueriesCount = 0;
-        this.#waitingList = [];
-        this.#endStream = null;
+        this.#queryAllocator = allocator;
+        this.#tableName = tableName;
+        this.#columns = columns;
+        this._dataBatch = [];
+        this.#batchSize = maxBatchSize;
     }
 
-    async _getAllocation(){
-        if(this.#runningQueriesCount++ < this.#MAX_CONCURRENT_QUERIES)
-            return;
-            
-        await (new Promise(resolve => this.#waitingList.push(resolve)));
+    async _write(chunk, _, cb){
+        this._handleChunk(chunk);
+        
+        if(this._dataBatch.length < this.#batchSize)
+            return void cb();
+
+        const dataBatch = this._dataBatch;
+        this._dataBatch = [];
+
+
+        const insertBuilder = new InsertBuilder(); 
+        const [query, params] = insertBuilder
+        .table(this.#tableName)
+        .columns(this.#columns)
+        .values(dataBatch)
+        .onConflictDoNothing()
+        .build();
+
+        await this.#queryAllocator.register(query, params)
+        
+        cb();
     }
 
-    _releaseAllocation(){
-        this.#runningQueriesCount--;
-        const runPending = this.#waitingList.pop();
-        runPending && runPending();
-    
-        this.#waitingList.length === 0 && this.#runningQueriesCount === 0 && this.#endStream && this.#endStream();
+    async _final(cb){
+        if(this._dataBatch.length === 0)
+            cb();
+        
+        const insertBuilder = new InsertBuilder(); 
+        const [query, params] = insertBuilder
+        .table(this.#tableName)
+        .columns(this.#columns)
+        .values(this._dataBatch)
+        .onConflictDoNothing()
+        .build();
+
+        await this.#queryAllocator.register(query, params);
+        
+        cb();
     }
 
-    async _executeQuery(sql, params){
-        return this.#pool.query(sql, params);
-    }
-
-    async _write(){
-        throw new Error(`_write() must be implemented`)
-    }
-
-    _final(cb){
-        this.#endStream = cb;
+    _handleChunk(){
+        throw new Error('_handleChunk() Must Be Implemented');
     }
 }
 

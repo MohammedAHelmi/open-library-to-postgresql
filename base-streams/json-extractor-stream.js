@@ -1,47 +1,60 @@
+import { once, EventEmitter } from 'events';
 import { Duplex } from 'stream';
 
-class JSONExtractorStream extends Duplex{
+class JSONExtractorStream extends Duplex {
     _pattern;
     _matches;
     #tail;
-    #getMore;
-    #pushData;
+    #eventEmitter;
+    #pendingRead;
 
     constructor(options){
         super({...options, objectMode: true});
         this._pattern = /[^{]*({.+})\n/gi;
         this._matches = [];
         this.#tail = '';
-        this.#getMore = null;
-        this.#pushData = null;
-        this.on('finish', () => this.#pushData && this.#pushData())
+        this.#eventEmitter = new EventEmitter();
+        this.#pendingRead = false;
+        this.once('finish', () => this.#eventEmitter.emit('data')); // when inputs finishes push(null) wouldn't call _write but _read may still be dangling
     }
 
-    _write(chunk, _, cb){
+    async _write(chunk, _, cb){
         this.#tail += chunk;
-        this._matches.push(...[...this.#tail.matchAll(this._pattern)].map(match => JSON.parse( match[1] )));
+
+        const JsonMatches = Array
+        .from( this.#tail.matchAll(this._pattern) )
+        .map( match => JSON.parse(match[1]) );
+
+        this._matches.push(
+            ...JsonMatches
+        );
+        
         this.#tail = this.#tail.replace(this._pattern, '');
 
-        this.#getMore = cb;
-
-        this.#pushData && this.#pushData();
-        this.#pushData = null;
+        this.#eventEmitter.emit('data');
+        await once(this.#eventEmitter, 'drain');
+        cb();
     }
 
     async _read(){
+        if(this.#pendingRead)
+            return;
+
         while(true){
-            if(this._matches.length === 0){
-                if(this.writableFinished)
-                    return this.push(null);
-                
-                this.#getMore && setImmediate(this.#getMore);
-                this.#getMore = null;
-                
-                await (new Promise(resolve => this.#pushData = resolve));
+            if(this._matches.length > 0){
+                const item = this._getItem();
+                if(!this.push(item))
+                    return;
                 continue;
             }
-
-            if(!this.push(this._getItem())) return;
+            
+            if(this.writableFinished)
+                return void this.push(null);
+            
+            this.#pendingRead = true;
+            this.#eventEmitter.emit('drain');
+            await once(this.#eventEmitter, 'data');
+            this.#pendingRead = false;
         }
     }
 

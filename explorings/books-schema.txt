@@ -1,6 +1,13 @@
 {
-    "type": "object",
+    "type": [
+        "object"
+    ],
     "properties": {
+        "key": {
+            "type": [
+                "string"
+            ]
+        },
         "title": {
             "type": [
                 "string",
@@ -15,10 +22,14 @@
             ],
             "properties": {
                 "type": {
-                    "type": "string"
+                    "type": [
+                        "string"
+                    ]
                 },
                 "value": {
-                    "type": "string"
+                    "type": [
+                        "string"
+                    ]
                 }
             }
         },
@@ -28,7 +39,9 @@
                 "undefined"
             ],
             "items": {
-                "type": "object",
+                "type": [
+                    "object"
+                ],
                 "properties": {
                     "type": {
                         "type": [
@@ -37,23 +50,31 @@
                         ],
                         "properties": {
                             "key": {
-                                "type": "string"
+                                "type": [
+                                    "string"
+                                ]
                             }
                         }
                     },
                     "author": {
                         "type": [
                             "object",
+                            "undefined",
                             "string"
                         ],
                         "properties": {
                             "key": {
-                                "type": "string"
+                                "type": [
+                                    "string"
+                                ]
                             }
                         }
                     },
                     "role": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "undefined"
+                        ]
                     }
                 }
             }

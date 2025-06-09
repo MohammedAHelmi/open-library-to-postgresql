@@ -1,8 +1,12 @@
 {
-    "type": "object",
+    "type": [
+        "object"
+    ],
     "properties": {
         "key": {
-            "type": "string"
+            "type": [
+                "string"
+            ]
         },
         "name": {
             "type": [
@@ -18,10 +22,14 @@
             ],
             "properties": {
                 "type": {
-                    "type": "string"
+                    "type": [
+                        "string"
+                    ]
                 },
                 "value": {
-                    "type": "string"
+                    "type": [
+                        "string"
+                    ]
                 }
             }
         }
