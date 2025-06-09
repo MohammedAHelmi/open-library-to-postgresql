@@ -6,6 +6,8 @@ import DBQueryAllocator from "../utils/db-query-allocator.js";
  */
 export default async function populateAuthorBooks(dbQueryAllocator){
     const query = (`
+        SET LOCAL work_mem = '1GB';
+        SET max_parallel_workers_per_gather = 8;
         INSERT INTO author_books (author_id, book_id)
         SELECT authors.id, books.id
         FROM author_books_keys keys
